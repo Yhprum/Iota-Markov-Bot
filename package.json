@@ -1,6 +1,6 @@
 {
   "name": "iota-markov-bot",
-  "version": "0.1",
+  "version": "0.0.1",
   "description": "Iota in a nutshell",
   "main": "index.js",
   "scripts": {
