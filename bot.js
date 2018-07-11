@@ -2,10 +2,11 @@ var HTTPS = require('https');
 
 var AWS = require('aws-sdk');
 var StringDecoder = require('string_decoder').StringDecoder;
-
-var markov;
+var MarkovGen = require('markov-generator');
 
 createMarkovChain();
+
+
 
 var botID = process.env.BOT_ID;
 
@@ -79,9 +80,8 @@ function createMarkovChain() {
         history += textChunk;
     }).on('httpDone', function () {
         history = history.split(/\r|\n/).filter(Boolean);
-        const MarkovGen = require('markov-generator');
-        markov = new MarkovGen({
-          input: history,
+        var markov = new MarkovGen({
+          input: array,
           minLength: 10
         });
     }).send();
