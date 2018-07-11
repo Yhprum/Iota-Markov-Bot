@@ -2,7 +2,7 @@ var HTTPS = require('https');
 
 var AWS = require('aws-sdk');
 var StringDecoder = require('string_decoder').StringDecoder;
-var MarkovGen = require('markov-generator');
+const Markov = require('markov-strings');
 
 createMarkovChain();
 
@@ -28,7 +28,7 @@ function respond() {
 function postMessage() {
   var botResponse, options, body, botReq;
 
-  botResponse = markov.makeChain();
+  botResponse = markov.generateSentenceSync();
 
   options = {
     hostname: 'api.groupme.com',
@@ -80,10 +80,7 @@ function createMarkovChain() {
         history += textChunk;
     }).on('httpDone', function () {
         history = history.split(/\r|\n/).filter(Boolean);
-        var markov = new MarkovGen({
-          input: array,
-          minLength: 10
-        });
+        const markov = new Markov(history);
     }).send();
 }
 
