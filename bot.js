@@ -1,5 +1,10 @@
 var HTTPS = require('https');
 
+var AWS = require('aws-sdk');
+var StringDecoder = require('string_decoder').StringDecoder;
+
+createMarkovChain();
+
 var botID = process.env.BOT_ID;
 
 function respond() {
@@ -20,7 +25,7 @@ function respond() {
 function postMessage() {
   var botResponse, options, body, botReq;
 
-  botResponse = "stop";
+  botResponse = markov.makeChain();
 
   options = {
     hostname: 'api.groupme.com',
@@ -52,5 +57,35 @@ function postMessage() {
   botReq.end(JSON.stringify(body));
 }
 
+function createMarkovChain() {
+
+    var history = "";
+
+    var s3 = new AWS.S3({
+        accessKeyId: process.env.AWS_ACCESS_KEY,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        region: 'us-east-2'
+    });
+    var decoder = new StringDecoder('utf8');
+    s3.getObject({
+        Bucket: 'iota-logs',
+        Key: 'logs2.txt'
+    }).on('error', function (err) {
+        console.log(err);
+    }).on('httpData', function (chunk) {
+        var textChunk = decoder.write(chunk);
+        history += textChunk;
+    }).on('httpDone', function () {
+        history = history.split(/\r|\n/).filter(Boolean)
+        const MarkovGen = require('markov-generator');
+        var fs = require('fs');
+        console.log("starting")
+        var array = fs.readFileSync('logs2.txt').toString().split("\n");
+        let markov = new MarkovGen({
+          input: array,
+          minLength: 10
+        });
+    }).send();
+}
 
 exports.respond = respond;
