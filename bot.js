@@ -5,15 +5,6 @@ var StringDecoder = require('string_decoder').StringDecoder;
 
 createMarkovChain();
 
-const MarkovGen = require('markov-generator');
-var fs = require('fs');
-console.log("starting")
-var array = fs.readFileSync('logs2.txt').toString().split("\n");
-var markov = new MarkovGen({
-  input: array,
-  minLength: 10
-});
-
 var botID = process.env.BOT_ID;
 
 function respond() {
@@ -86,6 +77,11 @@ function createMarkovChain() {
         history += textChunk;
     }).on('httpDone', function () {
         history = history.split(/\r|\n/).filter(Boolean);
+        const MarkovGen = require('markov-generator');
+        var markov = new MarkovGen({
+          input: history,
+          minLength: 10
+        });
     }).send();
 }
 
