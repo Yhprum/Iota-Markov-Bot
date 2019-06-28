@@ -5,12 +5,29 @@ var botID = process.env.BOT_ID;
 var Markov = require('./markov.js');
 
 var markov;
-Markov.setup(m => {
-  markov = m;
-  markov.buildCorpus();
-  console.log("ready");
-  console.log(markov.generate().string);
+
+const options = {
+  maxTries: 50,
+  filter: (result) => {
+    return result.score > 1 && result.refs.length >= 3 && result.string.split(' ').length >= 5;
+  }
+};
+
+const map = Markov.readFile(_map => {
+  Markov.createMarkov(_map.get("12345678"), (m) => {
+    markov = m;
+    markov.buildCorpus({ stateSize: 1 });
+    console.log("ready");
+    // console.log(markov.generate(options));
+  });
 });
+
+// Markov.iotaMarkov((m) => {
+//   markov = m;
+//   markov.buildCorpus();
+//   console.log("ready");
+//   console.log(markov.generate({stateSize: 3}).string);
+// });
 
 function respond() {
   var request = JSON.parse(this.req.chunks[0]),
@@ -30,7 +47,11 @@ function respond() {
 function postMessage() {
   var botResponse, options, body, botReq;
 
-  botResponse = markov.generate({stateSize: 2}).string;
+  try {
+    botResponse = markov.generate({stateSize: 2}).string;
+  } catch (e) {
+    botResponse = "error: could not generate (probably too few samples)"
+  }
 
   options = {
     hostname: 'api.groupme.com',
