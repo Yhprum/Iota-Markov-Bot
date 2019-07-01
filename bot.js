@@ -84,54 +84,60 @@ function createMessage(input, uid) {
     postMessage(response);
 }
 
-function addMarkov(nickname) {
+async function addMarkov(nickname) {
+    try {
+        let user = await getUserFromMention(nickname);
+        if (markovs.get(user.user_id)) {
+            console.log("created");
+            postMessage(markovs.get(user.user_id).generate().string);
+        } else {
+            Markov.createMarkov(quotes.get(user.user_id), (m) => {
+                console.log("creating");
+                let markov = m;
+                markov.buildCorpus({stateSize: 1});
+                markovs.set(user.user_id, markov);
+                postMessage("markov created");
+            });
+        }
+    } catch (e) {
+        postMessage("user not found");
+    }
+}
+
+function getUserFromMention(nickname) {
     let groupId = "12345678"; // Change This: The group id of the group the bot is in
+    let token = process.env.GROUPME_API_TOKEN;
 
     let users;
     let options = {
         hostname: 'api.groupme.com',
-        path: '/v3/groups/' + groupId + '?token=' + process.env.GROUPME_API_TOKEN,
+        path: '/v3/groups/' + groupId + '?token=' + token,
         method: 'GET'
     };
 
-    const req = HTTPS.request(options, (res) => {
-        res.setEncoding('binary');
-        let chunks = [];
+    return new Promise(resolve => {
+        const req = HTTPS.request(options, (res) => {
+            res.setEncoding('binary');
+            let chunks = [];
 
-        res.on('data', (chunk) => {
-            chunks.push(Buffer.from(chunk, 'binary'));
+            res.on('data', (chunk) => {
+                chunks.push(Buffer.from(chunk, 'binary'));
+            });
+
+            res.on('end', () => {
+                let binary = Buffer.concat(chunks);
+                users = JSON.parse(binary.toString('utf-8')).response.members;
+                let user = users.find(o => o.nickname === nickname);
+                resolve(user);
+            });
         });
 
-        res.on('end', () => {
-            let binary = Buffer.concat(chunks);
-            users = JSON.parse(binary.toString('utf-8')).response.members;
-            let user = users.find(o => o.nickname === nickname);
-            let response;
-
-            if (!user) {
-                postMessage("user not found");
-            } else if (markovs.get(user.user_id)) {
-                console.log("created");
-                response = markovs.get(user.user_id).generate().string;
-                postMessage(response);
-            } else {
-                Markov.createMarkov(quotes.get(user.user_id), (m) => {
-                    console.log("creating");
-                    let markov = m;
-                    markov.buildCorpus({stateSize: 1});
-                    markovs.set(user.user_id, markov);
-                    postMessage("markov created");
-                });
-            }
+        req.on('error', (e) => {
+            console.error(e);
         });
+        req.end();
     });
-
-    req.on('error', (e) => {
-        console.error(e);
-    });
-    req.end();
 }
-
 
 function postMessage(msg) {
     var options, body, botReq;
@@ -143,7 +149,7 @@ function postMessage(msg) {
     };
 
     body = {
-        "bot_id": process.env.botID,
+        "bot_id": process.env.BOT_ID,
         "text": msg
     };
 
