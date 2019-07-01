@@ -4,7 +4,7 @@ var AWS = require('aws-sdk');
 const fs = require('fs');
 
 module.exports = {
-    setup: function setup(callback) {
+    setup: function(callback) {
         var history = "";
         let s3 = new AWS.S3({
             accessKeyId: process.env.AWS_ACCESS_KEY,
@@ -25,7 +25,7 @@ module.exports = {
             callback(markov);
         });
     },
-    readFile: function readFile(callback) {
+    readFile: function(callback) {
         let rawdata = fs.readFileSync('message.json');
         let log = JSON.parse(rawdata);
         let map = new Map();
@@ -37,10 +37,10 @@ module.exports = {
         }
         callback(map);
     },
-    createMarkov: function setupFromFile(arr, callback) {
+    createMarkov: function(arr, callback) {
         callback(new Markov(arr));
     },
-    iotaMarkov: function setupFromFile(callback) {
+    iotaMarkov: function(callback) {
         let rawdata = fs.readFileSync('message.json');
         let log = JSON.parse(rawdata);
         let map = [];
