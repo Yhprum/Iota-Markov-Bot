@@ -4,17 +4,39 @@ var botID = process.env.BOT_ID;
 
 var Markov = require('./markov.js');
 var markovs = new Map();
+let token = process.env.GROUPME_API_TOKEN;
+let groupId = "12345678;"
 
-const options = {
-    maxTries: 50,
-    filter: (result) => {
-        return result.score > 1 && result.refs.length >= 3 && result.string.split(' ').length >= 5;
+// const options = {
+//     maxTries: 50,
+//     filter: (result) => {
+//         return result.score > 1 && result.refs.length >= 3 && result.string.split(' ').length >= 5;
+//     }
+// };
+let quotes = new Map();
+
+// Put all messages into a map to their sender
+(async () => {
+
+    let msg = await getMessages();
+    let count = msg.count;
+    let msg_limit = 100;
+    let msg_id = msg.messages[0].id;
+
+    while (count > 0) {
+        if (count < msg_limit) msg_limit = count % msg_limit;
+        let msgs = await getMessages(msg_limit, msg_id);
+        msgs = msgs.messages;
+        for(let i = 0, l = msgs.length; i < l; ++i) {
+            if (msgs[i].text) {
+                if (quotes.get(msgs[i].user_id)) quotes.get(msgs[i].user_id).push(msgs[i].text);
+                else quotes.set(msgs[i].user_id, [msgs[i].text]);
+            }
+        }
+        msg_id = msgs[msgs.length - 1].id;
+        count -= 100;
     }
-};
-let quotes;
-Markov.readFile(_map => {
-    quotes = _map;
-});
+})();
 
 // Markov.iotaMarkov((m) => {
 //   let markov = m;
@@ -115,7 +137,6 @@ async function changeName(nickname, newNickname) {
     try {
         let user = await getUserFromMention(nickname);
 
-        let groupId = "12345678";
         let token = process.env.GROUPME_API_TOKEN;
         let options = {
             hostname: 'api.groupme.com',
@@ -176,9 +197,6 @@ async function changeName(nickname, newNickname) {
 }
 
 function getUserFromMention(nickname) {
-    let groupId = "12345678"; // Change This: The group id of the group the bot is in
-    let token = process.env.GROUPME_API_TOKEN;
-
     let users;
     let options = {
         hostname: 'api.groupme.com',
@@ -204,6 +222,33 @@ function getUserFromMention(nickname) {
             });
         });
 
+        req.on('error', (e) => {
+            console.error(e);
+        });
+        req.end();
+    });
+}
+
+function getMessages(limit = 1, before_id = false) {
+    let queryString = before_id ? "&before_id=" + before_id : "";
+    return new Promise(resolve => {
+        let options = {
+            hostname: 'api.groupme.com',
+            path: '/v3/groups/' + groupId + '/messages?token=' + token + '&limit=' + limit + queryString,
+            method: 'GET'
+        };
+
+        const req = HTTPS.request(options, (res) => {
+            res.setEncoding('binary');
+            let chunks = [];
+            res.on('data', function (chunk) {
+                chunks.push(Buffer.from(chunk, 'binary'));
+            });
+            res.on('end', () => {
+                let binary = Buffer.concat(chunks);
+                resolve(JSON.parse(binary.toString('utf-8')).response);
+            });
+        });
         req.on('error', (e) => {
             console.error(e);
         });
