@@ -39,7 +39,6 @@ function respond() {
 }
 
 function createMessage(input, uid) {
-    console.log(input);
     let response = "";
     if (input[1].startsWith("@")) {
         input.splice(0, 1);
@@ -77,6 +76,14 @@ function createMessage(input, uid) {
                 response = "error: could not generate (probably too few samples)"
             }
             break;
+        case "rename":
+            input.splice(0, 2);
+            input = input.join(" ");
+            let nickname = input.match(/@.+?(?=->)/)[0].trim();
+            let newName = input.match(/->(.+)/)[1].trim();
+            response = "bet";
+            changeName(nickname.substring(1, input.length), newName);
+            break;
         default:
             response = "error: command not found";
             break;
@@ -99,6 +106,70 @@ async function addMarkov(nickname) {
                 postMessage("markov created");
             });
         }
+    } catch (e) {
+        postMessage("user not found");
+    }
+}
+
+async function changeName(nickname, newNickname) {
+    try {
+        let user = await getUserFromMention(nickname);
+
+        let groupId = "12345678";
+        let token = process.env.GROUPME_API_TOKEN;
+        let options = {
+            hostname: 'api.groupme.com',
+            path: '/v3/groups/' + groupId + '/members/' + user.id + '/remove?token=' + token,
+            method: 'POST'
+        };
+
+        const req = HTTPS.request(options, (res) => {
+            res.setEncoding('binary');
+            let chunks = [];
+
+            res.on('data', (chunk) => {
+                chunks.push(Buffer.from(chunk, 'binary'));
+            });
+
+            res.on('end', () => {
+                let binary = Buffer.concat(chunks);
+                console.log(binary.toString('utf-8'));
+
+                let postData = JSON.stringify({
+                    members: [{
+                        nickname: newNickname,
+                        user_id: user.user_id
+                    }]
+                });
+
+                let options = {
+                    hostname: 'api.groupme.com',
+                    path: '/v3/groups/' + groupId + '/members/add?token=' + token,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': postData.length
+                    }
+                };
+
+                const req2 = HTTPS.request(options, (res2) => {
+                    res2.setEncoding('utf8');
+                    res2.on('data', function (chunk) {
+                        console.log('Response: ' + chunk);
+                    });
+                });
+                req2.on('error', (e) => {
+                    console.error(e);
+                });
+                req2.write(postData);
+                req2.end();
+            });
+        });
+
+        req.on('error', (e) => {
+            console.error(e);
+        });
+        req.end();
     } catch (e) {
         postMessage("user not found");
     }
@@ -127,7 +198,8 @@ function getUserFromMention(nickname) {
             res.on('end', () => {
                 let binary = Buffer.concat(chunks);
                 users = JSON.parse(binary.toString('utf-8')).response.members;
-                let user = users.find(o => o.nickname === nickname);
+                let user = users.find(o => o.nickname === nickname.trim());
+                console.log(users.find(o => o.nickname === nickname.trim()));
                 resolve(user);
             });
         });
