@@ -1,11 +1,11 @@
 var HTTPS = require('https');
 
 var botID = process.env.BOT_ID;
+let token = process.env.GROUPME_API_TOKEN;
+let groupId = process.env.GROUP_ID;
 
 var Markov = require('./markov.js');
 var markovs = new Map();
-let token = process.env.GROUPME_API_TOKEN;
-let groupId = "12345678;"
 
 // const options = {
 //     maxTries: 50,
@@ -14,14 +14,16 @@ let groupId = "12345678;"
 //     }
 // };
 let quotes = new Map();
+let num_messages = 0;
 
 // Put all messages into a map to their sender
 (async () => {
-
     let msg = await getMessages();
     let count = msg.count;
     let msg_limit = 100;
     let msg_id = msg.messages[0].id;
+    num_messages = count;
+    quotes.set("iota", []);
 
     while (count > 0) {
         if (count < msg_limit) msg_limit = count % msg_limit;
@@ -31,6 +33,7 @@ let quotes = new Map();
             if (msgs[i].text) {
                 if (quotes.get(msgs[i].user_id)) quotes.get(msgs[i].user_id).push(msgs[i].text);
                 else quotes.set(msgs[i].user_id, [msgs[i].text]);
+                quotes.get("iota").push(msgs[i].text);
             }
         }
         msg_id = msgs[msgs.length - 1].id;
@@ -61,41 +64,27 @@ function respond() {
 }
 
 function createMessage(input, uid) {
-    let response = "";
-    if (input[1].startsWith("@")) {
-        input.splice(0, 1);
-        input = input.join(" ");
-        console.log(input);
-        addMarkov(input.substring(1, input.length));
-        return;
-    }
     switch (input[1]) {
-        case "opt":
-            if (!markovs.get(uid)) {
-                Markov.readFile(_map => {
-                    Markov.createMarkov(_map.get(uid), (m) => {
-                        let markov = m;
-                        markov.buildCorpus({stateSize: 1});
-                        markovs.set(uid, markov);
-                        response = "markov created";
-                    });
-                });
-            }
+        case (input[1].match(/^@/) || {}).input:
+            input.splice(0, 1);
+            input = input.join(" ");
+            console.log(input);
+            addMarkov(input.substring(1, input.length));
             break;
         case "me":
             if (markovs.get(uid)) {
                 try {
-                    response = markovs.get(uid).generate().string;
+                    postMessage(markovs.get(uid).generate().string);
                 } catch (e) {
-                    response = "error: could not generate (probably too few samples)"
+                    postMessage("error: could not generate (probably too few samples)");
                 }
             }
             break;
         case "iota":
             try {
-                response = markovs.get("iota").generate().string;
+                postMessage(markovs.get("iota").generate().string);
             } catch (e) {
-                response = "error: could not generate (probably too few samples)"
+                postMessage("error: could not generate (probably too few samples)");
             }
             break;
         case "rename":
@@ -103,14 +92,19 @@ function createMessage(input, uid) {
             input = input.join(" ");
             let nickname = input.match(/@.+?(?=->)/)[0].trim();
             let newName = input.match(/->(.+)/)[1].trim();
-            response = "bet";
+            postMessage("bet");
             changeName(nickname.substring(1, input.length), newName);
             break;
+        case "update":
+            update();
+            break;
+        case "help":
+            postMessage("no");
+            break;
         default:
-            response = "error: command not found";
+            postMessage("error: command not found");
             break;
     }
-    postMessage(response);
 }
 
 async function addMarkov(nickname) {
@@ -254,6 +248,28 @@ function getMessages(limit = 1, before_id = false) {
         });
         req.end();
     });
+}
+
+async function update() {
+    let msg = await getMessages();
+    let count = msg.count - num_messages;
+    let msg_limit = 100;
+    let msg_id = msg.messages[0].id;
+
+    while (count > 0) {
+        if (count < msg_limit) msg_limit = count % msg_limit;
+        let msgs = await getMessages(msg_limit, msg_id);
+        msgs = msgs.messages;
+        for(let i = 0, l = msgs.length; i < l; ++i) {
+            if (msgs[i].text) {
+                if (quotes.get(msgs[i].user_id)) quotes.get(msgs[i].user_id).push(msgs[i].text);
+                else quotes.set(msgs[i].user_id, [msgs[i].text]);
+
+            }
+        }
+        msg_id = msgs[msgs.length - 1].id;
+        count -= 100;
+    }
 }
 
 function postMessage(msg) {
