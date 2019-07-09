@@ -10,7 +10,7 @@ var markovs = new Map();
 const options = {
     maxTries: 50,
     filter: (result) => {
-        return result.score > 1 && result.refs.length >= 3 && result.string.split(' ').length > 5;
+        return result.score > 1 && result.string.split(' ').length > 5;
     }
 };
 let quotes = new Map();
