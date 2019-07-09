@@ -39,6 +39,13 @@ let num_messages = 0;
         msg_id = msgs[msgs.length - 1].id;
         count -= 100;
     }
+    Markov.createMarkov(quotes.get("iota"), (m) => {
+        console.log("creating");
+        let markov = m;
+        markov.buildCorpus({stateSize: 1});
+        markovs.set("iota", markov);
+        postMessage("Message setup complete");
+    });
 })();
 
 // Markov.iotaMarkov((m) => {
