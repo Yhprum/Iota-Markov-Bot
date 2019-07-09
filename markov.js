@@ -26,6 +26,6 @@ module.exports = {
         });
     },
     createMarkov: function(arr, callback) {
-        callback(new Markov(arr));
+        callback(new Markov(arr, {stateSize: 1}));
     }
 };

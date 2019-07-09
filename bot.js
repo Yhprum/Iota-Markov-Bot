@@ -7,17 +7,18 @@ let groupId = process.env.GROUP_ID;
 var Markov = require('./markov.js');
 var markovs = new Map();
 
-// const options = {
-//     maxTries: 50,
-//     filter: (result) => {
-//         return result.score > 1 && result.refs.length >= 3 && result.string.split(' ').length >= 5;
-//     }
-// };
+const options = {
+    maxTries: 50,
+    filter: (result) => {
+        return result.score > 1 && result.refs.length >= 3 && result.string.split(' ').length > 5;
+    }
+};
 let quotes = new Map();
 let num_messages = 0;
 
 // Put all messages into a map to their sender
 (async () => {
+    postMessage("Starting setup...");
     let msg = await getMessages();
     let count = msg.count;
     let msg_limit = 100;
@@ -42,9 +43,9 @@ let num_messages = 0;
     Markov.createMarkov(quotes.get("iota"), (m) => {
         console.log("creating");
         let markov = m;
-        markov.buildCorpus({stateSize: 1});
+        markov.buildCorpus();
         markovs.set("iota", markov);
-        postMessage("Message setup complete");
+        postMessage("Setup complete");
     });
 })();
 
@@ -81,7 +82,7 @@ function createMessage(input, uid) {
         case "me":
             if (markovs.get(uid)) {
                 try {
-                    postMessage(markovs.get(uid).generate().string);
+                    postMessage(markovs.get(uid).generate(options).string);
                 } catch (e) {
                     postMessage("error: could not generate (probably too few samples)");
                 }
@@ -89,7 +90,7 @@ function createMessage(input, uid) {
             break;
         case "iota":
             try {
-                postMessage(markovs.get("iota").generate().string);
+                postMessage(markovs.get("iota").generate(options).string);
             } catch (e) {
                 postMessage("error: could not generate (probably too few samples)");
             }
@@ -119,12 +120,12 @@ async function addMarkov(nickname) {
         let user = await getUserFromMention(nickname);
         if (markovs.get(user.user_id)) {
             console.log("created");
-            postMessage(markovs.get(user.user_id).generate().string);
+            postMessage(markovs.get(user.user_id).generate(options).string);
         } else {
             Markov.createMarkov(quotes.get(user.user_id), (m) => {
                 console.log("creating");
                 let markov = m;
-                markov.buildCorpus({stateSize: 1});
+                markov.buildCorpus();
                 markovs.set(user.user_id, markov);
                 postMessage("markov created");
             });
