@@ -282,7 +282,7 @@ function postMessage(msg) {
     };
 
     body = {
-        "bot_id": process.env.BOT_ID,
+        "bot_id": botID,
         "text": msg
     };
 
