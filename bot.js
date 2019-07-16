@@ -16,45 +16,56 @@ const options = {
 let quotes = new Map();
 let num_messages = 0;
 
-// Put all messages into a map to their sender
+const fs = require('fs');
+const fsPromises = fs.promises;
+
 (async () => {
-    postMessage("Starting setup...");
-    let msg = await getMessages();
-    let count = msg.count;
-    let msg_limit = 100;
-    let msg_id = msg.messages[0].id;
-    num_messages = count;
-    quotes.set("iota", []);
+    try {
+        let logs = await fsPromises.readFile('storage/logs.json', 'utf8');
+        quotes = new Map(JSON.parse(logs));
+    } catch (err) {
+        // Storage not there, perform first-time setup
+        postMessage("Starting first and only time setup...");
+        let msg = await getMessages();
+        let count = msg.count;
+        let msg_limit = 100;
+        let msg_id = msg.messages[0].id;
+        num_messages = count;
 
-    while (count > 0) {
-        if (count < msg_limit) msg_limit = count % msg_limit;
-        let msgs = await getMessages(msg_limit, msg_id);
-        msgs = msgs.messages;
-        for(let i = 0, l = msgs.length; i < l; ++i) {
-            if (msgs[i].text) {
-                if (quotes.get(msgs[i].user_id)) quotes.get(msgs[i].user_id).push(msgs[i].text);
-                else quotes.set(msgs[i].user_id, [msgs[i].text]);
-                quotes.get("iota").push(msgs[i].text);
+        while (count > 0) {
+            if (count < msg_limit) msg_limit = count % msg_limit;
+            let msgs = await getMessages(msg_limit, msg_id);
+            msgs = msgs.messages;
+            for(let i = 0, l = msgs.length; i < l; ++i) {
+                if (msgs[i].text) {
+                    if (quotes.get(msgs[i].user_id)) quotes.get(msgs[i].user_id).push(msgs[i].text);
+                    else quotes.set(msgs[i].user_id, [msgs[i].text]);
+                }
             }
+            msg_id = msgs[msgs.length - 1].id;
+            count -= 100;
+            console.log(count);
         }
-        msg_id = msgs[msgs.length - 1].id;
-        count -= 100;
+        console.log("end");
+        await fsPromises.writeFile('storage/logs.json', JSON.stringify([...quotes]));
     }
-    Markov.createMarkov(quotes.get("iota"), (m) => {
-        console.log("creating");
-        let markov = m;
-        markov.buildCorpus();
-        markovs.set("iota", markov);
-        postMessage("Setup complete");
-    });
+    try {
+        let iota = await fsPromises.readFile('storage/iota.json', 'utf8');
+        markovs.set("iota", JSON.parse(iota));
+    } catch (e) {
+        // No group markov created yet
+        Markov.createMarkov([...quotes.values()].flat(), (m) => {
+            console.log("creating");
+            let markov = m;
+            markov.buildCorpusAsync().then(() => {
+                markovs.set("iota", markov);
+                console.log("created");
+                fs.writeFile('storage/iota.json', JSON.stringify(markov));
+            });
+            postMessage("Setup complete");
+        });
+    }
 })();
-
-// Markov.iotaMarkov((m) => {
-//   let markov = m;
-//   markov.buildCorpus();
-//   console.log("ready");
-//   markovs.set("iota", markov);
-// });
 
 function respond() {
     var request = JSON.parse(this.req.chunks[0]),
@@ -92,7 +103,20 @@ function createMessage(input, uid) {
             try {
                 postMessage(markovs.get("iota").generate(options).string);
             } catch (e) {
-                postMessage("error: could not generate (probably too few samples)");
+                postMessage("error: could not generate");
+            }
+            break;
+        case "system":
+            if (markovs.get(user.user_id)) {
+                postMessage(markovs.get("system").generate(options).string);
+            } else {
+                Markov.createMarkov(quotes.get("system"), (m) => {
+                    console.log("creating");
+                    let markov = m;
+                    markov.buildCorpus();
+                    markovs.set(user.user_id, markov);
+                    postMessage("markov created");
+                });
             }
             break;
         case "rename":
@@ -278,6 +302,7 @@ async function update() {
         msg_id = msgs[msgs.length - 1].id;
         count -= 100;
     }
+    fs.writeFile('storage/logs.json', JSON.stringify([...quotes]));
 }
 
 function postMessage(msg) {
