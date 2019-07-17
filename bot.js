@@ -114,7 +114,7 @@ function createMessage(input, uid) {
                     console.log("creating");
                     let markov = m;
                     markov.buildCorpus();
-                    markovs.set(user.user_id, markov);
+                    markovs.set("system", markov);
                     postMessage("markov created");
                 });
             }

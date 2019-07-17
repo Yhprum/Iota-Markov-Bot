@@ -12,7 +12,7 @@
     "markov-strings": "^2.0.2"
   },
   "engines": {
-    "node": "^8"
+    "node": "12.4.0"
   },
   "repository": {
     "type": "git",
