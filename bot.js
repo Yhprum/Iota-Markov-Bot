@@ -107,7 +107,7 @@ function createMessage(input, uid) {
             }
             break;
         case "system":
-            if (markovs.get(user.user_id)) {
+            if (markovs.get("system")) {
                 postMessage(markovs.get("system").generate(options).string);
             } else {
                 Markov.createMarkov(quotes.get("system"), (m) => {
