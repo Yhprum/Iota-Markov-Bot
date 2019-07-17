@@ -19,6 +19,8 @@ let num_messages = 0;
 const fs = require('fs');
 const fsPromises = fs.promises;
 
+var path = require("path");
+
 (async () => {
     try {
         let logs = await fsPromises.readFile('storage/logs.json', 'utf8');
@@ -43,10 +45,14 @@ const fsPromises = fs.promises;
                 }
             }
             msg_id = msgs[msgs.length - 1].id;
-            count -= 100;
+            count = 0;
             console.log(count);
         }
         console.log("end");
+
+        let temp_dir = path.join(process.cwd(), 'storage/');
+        if (!fs.existsSync(temp_dir))
+            fs.mkdirSync(temp_dir);
         await fsPromises.writeFile('storage/logs.json', JSON.stringify([...quotes]));
     }
     try {
@@ -60,7 +66,9 @@ const fsPromises = fs.promises;
             markov.buildCorpusAsync().then(() => {
                 markovs.set("iota", markov);
                 console.log("created");
-                fs.writeFile('storage/iota.json', JSON.stringify(markov));
+                fs.writeFile('storage/iota.json', JSON.stringify(markov), (e) => {
+                    if (e) console.log(e);
+                });
             });
             postMessage("Setup complete");
         });
