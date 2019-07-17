@@ -45,7 +45,7 @@ var path = require("path");
                 }
             }
             msg_id = msgs[msgs.length - 1].id;
-            count = 0;
+            count -= 100;
             console.log(count);
         }
         console.log("end");
