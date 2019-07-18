@@ -55,23 +55,13 @@ var path = require("path");
             fs.mkdirSync(temp_dir);
         await fsPromises.writeFile('storage/logs.json', JSON.stringify([...quotes]));
     }
-    try {
-        let iota = await fsPromises.readFile('storage/iota.json', 'utf8');
-        markovs.set("iota", JSON.parse(iota));
-    } catch (e) {
-        // No group markov created yet
-        let flat = [].concat.apply([], [...quotes.values()]);
-        Markov.createMarkov(flat, (m) => {
-            console.log("creating");
-            let markov = m;
-            markov.buildCorpusAsync().then(() => {
-                markovs.set("iota", markov);
-                console.log("created");
-                fs.writeFile('storage/iota.json', JSON.stringify(markov), (e) => {
-                    if (e) console.log(e);
-                });
-                if (e) console.log(e);
-            });
+    let flat = [].concat.apply([], [...quotes.values()]);
+    Markov.createMarkov(flat, (m) => {
+        let markov = m;
+        let t1 = performance.now();
+        markov.buildCorpusAsync().then(() => {
+            markovs.set("iota", markov);
+            console.log("created in " + (performance.now() - t1)/1000 + " seconds");
         });
         postMessage("Setup complete");
     });
