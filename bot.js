@@ -60,7 +60,8 @@ var path = require("path");
         markovs.set("iota", JSON.parse(iota));
     } catch (e) {
         // No group markov created yet
-        Markov.createMarkov([...quotes.values()].flat(), (m) => {
+        let flat = [].concat.apply([], [...quotes.values()]);
+        Markov.createMarkov(flat, (m) => {
             console.log("creating");
             let markov = m;
             markov.buildCorpusAsync().then(() => {
