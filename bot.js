@@ -21,6 +21,10 @@ const fsPromises = fs.promises;
 
 var path = require("path");
 
+const {
+    performance
+} = require('perf_hooks');
+
 (async () => {
     try {
         let logs = await fsPromises.readFile('storage/logs.json', 'utf8');
