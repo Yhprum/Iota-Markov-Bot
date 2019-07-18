@@ -55,24 +55,16 @@ var path = require("path");
             fs.mkdirSync(temp_dir);
         await fsPromises.writeFile('storage/logs.json', JSON.stringify([...quotes]));
     }
-    try {
-        let iota = await fsPromises.readFile('storage/iota.json', 'utf8');
-        markovs.set("iota", JSON.parse(iota));
-    } catch (e) {
-        // No group markov created yet
-        Markov.createMarkov([...quotes.values()].flat(), (m) => {
-            console.log("creating");
-            let markov = m;
-            markov.buildCorpusAsync().then(() => {
-                markovs.set("iota", markov);
-                console.log("created");
-                fs.writeFile('storage/iota.json', JSON.stringify(markov), (e) => {
-                    if (e) console.log(e);
-                });
-            });
-            postMessage("Setup complete");
+    Markov.createMarkov([...quotes.values()].flat(), (m) => {
+        console.log("creating");
+        let markov = m;
+        markov.buildCorpusAsync().then(() => {
+            markovs.set("iota", markov);
+            console.log("created");
+            postMessage("Group markov created");
         });
-    }
+    });
+    postMessage("Setup complete");
 })();
 
 function respond() {
