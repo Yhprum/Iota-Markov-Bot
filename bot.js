@@ -70,10 +70,11 @@ var path = require("path");
                 fs.writeFile('storage/iota.json', JSON.stringify(markov), (e) => {
                     if (e) console.log(e);
                 });
+                if (e) console.log(e);
             });
-            postMessage("Setup complete");
         });
-    }
+        postMessage("Setup complete");
+    });
 })();
 
 function respond() {
