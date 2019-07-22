@@ -14,7 +14,9 @@ const options = {
     }
 };
 let quotes = new Map();
+let images = new Map();
 let num_messages = 0;
+let guid = 0;
 
 const fs = require('fs');
 const fsPromises = fs.promises;
@@ -77,7 +79,7 @@ function respond() {
 
     if (request.text && botRegex.test(request.text)) {
         this.res.writeHead(200);
-        createMessage(request.text.split(" "), request.user_id);
+        createMessage(request.text.split(" "), request.user_id, request);
         this.res.end();
     } else {
         console.log("don't care");
@@ -86,7 +88,7 @@ function respond() {
     }
 }
 
-function createMessage(input, uid) {
+function createMessage(input, uid, request) {
     switch (input[1]) {
         case (input[1].match(/^@/) || {}).input:
             input.splice(0, 1);
@@ -134,12 +136,41 @@ function createMessage(input, uid) {
         case "update":
             update();
             break;
+        case "img":
+        case "picture":
+        case "pic":
+            imgCommand(input.splice(0, 2), request);
+            break;
         case "help":
             postMessage("no");
             break;
         default:
             postMessage("error: command not found");
             break;
+    }
+}
+
+function imgCommand(input, request) {
+    if (request.attachments.length) {
+        for (let a of request.attachments) {
+            if (a.type === "image") {
+                images.set(input, a.url);
+                break;
+            }
+        }
+    } else if (images.get(input)) {
+        let body =  {
+            "bot_id": botID,
+            "attachments":[
+                {
+                    "type": "image",
+                    "url": images.get(input)
+                }
+            ]
+        };
+        postWithBody(JSON.stringify(body));
+    } else {
+        postMessage("image not found");
     }
 }
 
@@ -341,6 +372,31 @@ function postMessage(msg) {
         console.log('timeout posting message ' + JSON.stringify(err));
     });
     botReq.end(JSON.stringify(body));
+}
+
+function postWithBody(body) {
+
+    let options = {
+        hostname: 'api.groupme.com',
+        path: '/v3/bots/post',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': body.length
+        }
+    };
+
+    const req = HTTPS.request(options, (res) => {
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            console.log('Response: ' + chunk);
+        });
+    });
+    req.on('error', (e) => {
+        console.error(e);
+    });
+    req.write(body);
+    req.end();
 }
 
 exports.respond = respond;
