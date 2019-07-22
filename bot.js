@@ -139,7 +139,8 @@ function createMessage(input, uid, request) {
         case "img":
         case "picture":
         case "pic":
-            imgCommand(input.splice(0, 2), request);
+            input.splice(0, 2);
+            imgCommand(input, request);
             break;
         case "help":
             postMessage("no");
@@ -151,10 +152,8 @@ function createMessage(input, uid, request) {
 }
 
 function imgCommand(input, request) {
-    console.log(images);
     if (request.attachments.length) {
         for (let a of request.attachments) {
-            console.log(a);
             if (a.type === "image") {
                 images.set(input, a.url);
                 break;
