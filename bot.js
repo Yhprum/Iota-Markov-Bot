@@ -140,7 +140,7 @@ function createMessage(input, uid, request) {
         case "picture":
         case "pic":
             input.splice(0, 2);
-            imgCommand(input, request);
+            imgCommand(input.join(" "), request);
             break;
         case "help":
             postMessage("no");
