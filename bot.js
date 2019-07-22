@@ -154,12 +154,13 @@ function createMessage(input, uid, request) {
 function imgCommand(input, request) {
     if (request.attachments.length) {
         for (let a of request.attachments) {
+            console.log(a);
             if (a.type === "image") {
                 images.set(input, a.url);
                 break;
             }
         }
-    } else if (images.get(input)) {
+    } else if (images.has(input)) {
         let body =  {
             "bot_id": botID,
             "attachments":[
@@ -173,6 +174,8 @@ function imgCommand(input, request) {
     } else {
         postMessage("image not found");
     }
+    console.log(images);
+    console.log(input);
 }
 
 async function addMarkov(nickname) {
