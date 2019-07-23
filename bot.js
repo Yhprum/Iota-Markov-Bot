@@ -1,4 +1,5 @@
 var HTTPS = require('https');
+const request = require('request').defaults({ encoding: null });
 
 var botID = process.env.BOT_ID;
 let token = process.env.GROUPME_API_TOKEN;
@@ -142,6 +143,10 @@ function createMessage(input, uid, request) {
             input.splice(0, 2);
             imgCommand(input.join(" "), request);
             break;
+        case "derek":
+            input.splice(0, 2);
+            derek(input.join(" "));
+            break;
         case "help":
             postMessage("no");
             break;
@@ -176,6 +181,49 @@ function imgCommand(input, request) {
     }
     console.log(images);
     console.log(input);
+}
+
+function derek(text) {
+    console.log("testing");
+    let params = {
+        "template_id": 191961372,
+        "username": process.env.IMGFLIP_USERNAME,
+        "password": process.env.IMGFLIP_PASSWORD,
+        "text0": text,
+        "font": "arial"
+    };
+
+    request.post({url:'https://api.imgflip.com/caption_image', formData: params}, (err, httpResponse, body) => {
+        if (err) {
+            return console.error('failed:', err);
+        }
+        let img = JSON.parse(body).data.url;
+        request(img, function (error, response, body) {
+            let data = body.toString('utf8');
+            let options = {
+                url:'https://image.groupme.com/pictures',
+                body: Buffer.from(body, 'base64'),
+                encoding: null,
+                headers: {
+                    'X-Access-Token': token,
+                    'Content-Type': "image/jpeg"
+                }
+            };
+            request.post(options, (err, httpResponse, body) => {
+                let url = JSON.parse(body.toString()).payload.url;
+                let reqBody =  {
+                    "bot_id": botID,
+                    "attachments":[
+                        {
+                            "type": "image",
+                            "url": url
+                        }
+                    ]
+                };
+                postWithBody(JSON.stringify(reqBody));
+            });
+        });
+    });
 }
 
 async function addMarkov(nickname) {
