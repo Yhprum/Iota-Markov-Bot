@@ -24,10 +24,6 @@ const fsPromises = fs.promises;
 
 var path = require("path");
 
-const {
-    performance
-} = require('perf_hooks');
-
 (async () => {
     try {
         let logs = await fsPromises.readFile('storage/logs.json', 'utf8');
@@ -65,10 +61,8 @@ const {
     let flat = [].concat.apply([], [...quotes.values()]);
     Markov.createMarkov(flat, (m) => {
         let markov = m;
-        let t1 = performance.now();
         markov.buildCorpusAsync().then(() => {
             markovs.set("iota", markov);
-            console.log("created in " + (performance.now() - t1)/1000 + " seconds");
         });
         postMessage("Setup complete");
     });
@@ -76,7 +70,7 @@ const {
 
 function respond() {
     var request = JSON.parse(this.req.chunks[0]),
-        botRegex = /^!brian/i;
+        botRegex = /^=/;
 
     if (request.text && botRegex.test(request.text)) {
         this.res.writeHead(200);
@@ -90,30 +84,38 @@ function respond() {
 }
 
 function createMessage(input, uid, request) {
-    switch (input[1]) {
-        case (input[1].match(/^@/) || {}).input:
+    switch (input[0]) {
+        case "=markov":
             input.splice(0, 1);
             input = input.join(" ");
             console.log(input);
             addMarkov(input.substring(1, input.length));
             break;
-        case "me":
+        case "=me":
             if (markovs.get(uid)) {
                 try {
                     postMessage(markovs.get(uid).generate(options).string);
                 } catch (e) {
                     postMessage("error: could not generate (probably too few samples)");
                 }
+            } else {
+                Markov.createMarkov(quotes.get(uid), (m) => {
+                    console.log("creating");
+                    let markov = m;
+                    markov.buildCorpus();
+                    markovs.set("system", markov);
+                    postMessage("markov created");
+                });
             }
             break;
-        case "iota":
+        case "=iota":
             try {
                 postMessage(markovs.get("iota").generate(options).string);
             } catch (e) {
                 postMessage("error: could not generate");
             }
             break;
-        case "system":
+        case "=system":
             if (markovs.get("system")) {
                 postMessage(markovs.get("system").generate(options).string);
             } else {
@@ -126,28 +128,28 @@ function createMessage(input, uid, request) {
                 });
             }
             break;
-        case "rename":
-            input.splice(0, 2);
+        case "=rename":
+            input.splice(0, 1);
             input = input.join(" ");
             let nickname = input.match(/@.+?(?=->)/)[0].trim();
             let newName = input.match(/->(.+)/)[1].trim();
             postMessage("bet");
             changeName(nickname.substring(1, input.length), newName);
             break;
-        case "update":
+        case "=update":
             update();
             break;
-        case "img":
-        case "picture":
-        case "pic":
-            input.splice(0, 2);
+        case "=img":
+        case "=picture":
+        case "=pic":
+            input.splice(0, 1);
             imgCommand(input.join(" "), request);
             break;
-        case "derek":
-            input.splice(0, 2);
+        case "=derek":
+            input.splice(0, 1);
             derek(input.join(" "));
             break;
-        case "help":
+        case "=help":
             postMessage("no");
             break;
         default:
