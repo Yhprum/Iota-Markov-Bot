@@ -110,7 +110,7 @@ function createMessage(input, uid, request) {
                     console.log("creating");
                     let markov = m;
                     markov.buildCorpus();
-                    markovs.set("system", markov);
+                    markovs.set(uid, markov);
                     postMessage("markov created");
                 });
             }
@@ -171,7 +171,7 @@ function imgCommand(input, request) {
             console.log(a);
             if (a.type === "image") {
                 images.set(input, a.url);
-                fs.writeFile('storage/images.json', JSON.stringify([...images]));
+                fs.writeFileSync('storage/images.json', JSON.stringify([...images]));
                 break;
             }
         }
