@@ -58,14 +58,21 @@ var path = require("path");
             fs.mkdirSync(temp_dir);
         await fsPromises.writeFile('storage/logs.json', JSON.stringify([...quotes]));
     }
-    let flat = [].concat.apply([], [...quotes.values()]);
-    Markov.createMarkov(flat, (m) => {
-        let markov = m;
-        markov.buildCorpusAsync().then(() => {
-            markovs.set("iota", markov);
-        });
-        postMessage("Setup complete");
-    });
+
+    try {
+        let imgs = await fsPromises.readFile('storage/img.json', 'utf8');
+        images = new Map(JSON.parse(imgs));
+    } catch (err) {
+        fs.writeFile('storage/images.json', JSON.stringify([]));
+    }
+    // let flat = [].concat.apply([], [...quotes.values()]);
+    // Markov.createMarkov(flat, (m) => {
+    //     let markov = m;
+    //     markov.buildCorpusAsync().then(() => {
+    //         markovs.set("iota", markov);
+    //     });
+    //     postMessage("Setup complete");
+    // });
 })();
 
 function respond() {
@@ -164,6 +171,7 @@ function imgCommand(input, request) {
             console.log(a);
             if (a.type === "image") {
                 images.set(input, a.url);
+                fs.writeFile('storage/images.json', JSON.stringify([...images]));
                 break;
             }
         }
@@ -240,7 +248,7 @@ async function addMarkov(nickname) {
                 let markov = m;
                 markov.buildCorpus();
                 markovs.set(user.user_id, markov);
-                postMessage("markov created");
+                postMessage(markovs.get(user.user_id).generate(options).string);
             });
         }
     } catch (e) {
