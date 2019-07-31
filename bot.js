@@ -91,7 +91,7 @@ function respond() {
 }
 
 function createMessage(input, uid, request) {
-    switch (input[0]) {
+    switch (input[0].toLowerCase()) {
         case "=markov":
             input.splice(0, 1);
             input = input.join(" ");
@@ -150,7 +150,7 @@ function createMessage(input, uid, request) {
         case "=picture":
         case "=pic":
             input.splice(0, 1);
-            imgCommand(input.join(" "), request);
+            imgCommand(input.join(" ").toLowerCase(), request);
             break;
         case "=derek":
             input.splice(0, 1);
