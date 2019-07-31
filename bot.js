@@ -60,7 +60,7 @@ var path = require("path");
     }
 
     try {
-        let imgs = await fsPromises.readFile('storage/img.json', 'utf8');
+        let imgs = await fsPromises.readFile('storage/images.json', 'utf8');
         images = new Map(JSON.parse(imgs));
     } catch (err) {
         fs.writeFile('storage/images.json', JSON.stringify([]));
