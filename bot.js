@@ -16,6 +16,9 @@ const options = {
 };
 let quotes = new Map();
 let images = new Map();
+let config = {
+    "nameChange": 0
+};
 let num_messages = 0;
 let guid = 0;
 
@@ -64,6 +67,12 @@ var path = require("path");
         images = new Map(JSON.parse(imgs));
     } catch (err) {
         fs.writeFile('storage/images.json', JSON.stringify([]));
+    }
+    try {
+        let cfg = await fsPromises.readFile('storage/config.json', 'utf8');
+        config = JSON.parse(cfg);
+    } catch (err) {
+        fs.writeFile('storage/config.json', JSON.stringify(config));
     }
     // let flat = [].concat.apply([], [...quotes.values()]);
     // Markov.createMarkov(flat, (m) => {
@@ -136,12 +145,19 @@ function createMessage(input, uid, request) {
             }
             break;
         case "=rename":
-            input.splice(0, 1);
-            input = input.join(" ");
-            let nickname = input.match(/@.+?(?=->)/)[0].trim();
-            let newName = input.match(/->(.+)/)[1].trim();
-            postMessage("bet");
-            changeName(nickname.substring(1, input.length), newName);
+            let now = new Date();
+            let diff = (now.getTime() - config.nameChange) / 1000 / 60;
+            if (diff < 60) {
+                diff = Math.round(diff * 100) / 100;
+                changeName("This command is on cooldown for" + (60 - diff) + " minutes");
+            } else {
+                input.splice(0, 1);
+                input = input.join(" ");
+                let nickname = input.match(/@.+?(?=->)/)[0].trim();
+                let newName = input.match(/->(.+)/)[1].trim();
+                postMessage("bet");
+                changeName(nickname.substring(1, input.length), newName);
+            }
             break;
         case "=update":
             update();
@@ -300,6 +316,8 @@ async function changeName(nickname, newNickname) {
                     res2.setEncoding('utf8');
                     res2.on('data', function (chunk) {
                         console.log('Response: ' + chunk);
+                        config.nameChange = new Date().getTime();
+                        fs.writeFileSync('storage/config.json', JSON.stringify(config));
                     });
                 });
                 req2.on('error', (e) => {
