@@ -7,6 +7,7 @@ let groupId = process.env.GROUP_ID;
 
 var Markov = require('./markov.js');
 var markovs = new Map();
+const help = require("./help");
 
 const options = {
     maxTries: 50,
@@ -173,7 +174,8 @@ function createMessage(input, uid, request) {
             derek(input.join(" "));
             break;
         case "=help":
-            postMessage("no");
+            let output = help(input);
+            postMessage(output);
             break;
         default:
             postMessage("error: command not found");
