@@ -100,7 +100,7 @@ function respond() {
     }
 }
 
-function createMessage(input, uid, request) {
+async function createMessage(input, uid, request) {
     switch (input[0].toLowerCase()) {
         case "=markov":
             input.splice(0, 1);
@@ -172,6 +172,14 @@ function createMessage(input, uid, request) {
         case "=derek":
             input.splice(0, 1);
             derek(input.join(" "));
+            break;
+        case "=uwu":
+            let msgs = await getMessages(2);
+            let toUwu = msgs.messages[1].text;
+            toUwu = toUwu.replace(/[lr]/gi, "w");
+            toUwu = toUwu.replace(/th/gi, "d");
+            toUwu = toUwu.replace(/\b(you)\b/gi, "yuw");
+            toUwu += " uwu";
             break;
         case "=help":
             let output = help(input);

@@ -8,6 +8,8 @@ module.exports = input => {
     } else {
         switch (input[1].toLowerCase()) {
             case "markov":
+            case "me":
+            case "system":
                 output += "=markov @username\n";
                 output += "creates a message resembling something the user would say\n";
                 output += "use =me to see yourself, or =system to see system messages";
