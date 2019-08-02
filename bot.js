@@ -180,6 +180,7 @@ async function createMessage(input, uid, request) {
             toUwu = toUwu.replace(/th/gi, "d");
             toUwu = toUwu.replace(/\b(you)\b/gi, "yuw");
             toUwu += " uwu";
+            postMessage(toUwu);
             break;
         case "=help":
             let output = help(input);
