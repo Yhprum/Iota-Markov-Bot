@@ -67,13 +67,13 @@ var path = require("path");
         let imgs = await fsPromises.readFile('storage/images.json', 'utf8');
         images = new Map(JSON.parse(imgs));
     } catch (err) {
-        fs.writeFile('storage/images.json', JSON.stringify([]));
+        fs.writeFileSync('storage/images.json', JSON.stringify([]));
     }
     try {
         let cfg = await fsPromises.readFile('storage/config.json', 'utf8');
         config = JSON.parse(cfg);
     } catch (err) {
-        fs.writeFile('storage/config.json', JSON.stringify(config));
+        fs.writeFileSync('storage/config.json', JSON.stringify(config));
     }
     // let flat = [].concat.apply([], [...quotes.values()]);
     // Markov.createMarkov(flat, (m) => {
