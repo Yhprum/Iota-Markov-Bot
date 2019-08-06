@@ -121,7 +121,7 @@ async function createMessage(input, uid, request) {
                     let markov = m;
                     markov.buildCorpus();
                     markovs.set(uid, markov);
-                    postMessage("markov created");
+                    postMessage(markovs.get(uid).generate(options).string);
                 });
             }
             break;
